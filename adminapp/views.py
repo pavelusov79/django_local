@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
 from adminapp.forms import ShopUserAdminEditForm, \
-    ProductCategoryEditForm, ProductEditForm, NewsEditForm, SubscribeForm
+    ProductCategoryEditForm, ProductEditForm, NewsEditForm
 
 from authapp.models import ShopUser
 from mainapp.models import Product, ProductCategory, ProdPage, News, Subscribe
@@ -525,22 +525,17 @@ def product_delete(request, pk):
 @user_passes_test(lambda u: u.is_superuser)
 def subscribers(request):
     title = 'Админка / Подписчики'
-    sub_list = Subscribe.objects.all()
+    sub_list = Subscribe.objects.filter(is_active=True)
     checked_values = request.POST.getlist('checked')
-
     if request.method == "POST":
-        if sub_list.filter(is_active=True, checked__in=checked_values):
-            sub_list.update(is_active=False)
+        checked_list = Subscribe.objects.filter(pk__in=checked_values).select_related()
+        if checked_list.filter(is_active=True):
+            checked_list.update(is_active=False)
 
-        elif sub_list.filter(is_active=False, checked__in=checked_values):
-            sub_list.update(is_active=True)
+        # elif checked_list.filter(is_active=False):
+        #     checked_list.update(is_active=True)
 
-        return HttpResponseRedirect(reverse_lazy('admin:subscribers'))
-
-    else:
-        form = SubscribeForm()
-
-    content = {'title': title, 'objects': sub_list, 'form': form}
+    content = {'title': title, 'objects': sub_list}
 
     return render(request, 'adminapp/subscribers.html', content)
 
